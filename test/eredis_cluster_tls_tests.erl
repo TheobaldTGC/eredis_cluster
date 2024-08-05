@@ -12,8 +12,9 @@ connect_test() ->
                       {keyfile,    filename:join([Dir, "client.key"])},
                       {verify,                 verify_peer},
                       {server_name_indication, "Server"}]}],
-    ok = eredis_cluster:connect([{"127.0.0.1", 31001},
-                                 {"127.0.0.1", 31002}], Options),
+    Res = eredis_cluster:connect([{"127.0.0.1", 31001},
+                                  {"127.0.0.1", 31002}], Options),
+    ?assertMatch(ok, Res),
     ?assertMatch(ok, eredis_cluster:stop()).
 
 get_set_test() ->
@@ -39,8 +40,9 @@ options_override_test() ->
     Options = [{tls, [{cacertfile, filename:join([Dir, "ca.crt"])},
                       {certfile,   filename:join([Dir, "client.crt"])},
                       {keyfile,    filename:join([Dir, "client.key"])}]}],
-    ok = eredis_cluster:connect([{"127.0.0.1", 31001},
-                                 {"127.0.0.1", 31002}], Options),
+    Res = eredis_cluster:connect([{"127.0.0.1", 31001},
+                                  {"127.0.0.1", 31002}], Options),
+    ?assertMatch(ok, Res),
 
     Key = "Key123",
     ?assertEqual({ok, <<"OK">>}, eredis_cluster:q(["SET", Key, "value"])),
@@ -89,5 +91,6 @@ connect_tls() ->
     application:set_env(eredis_cluster, tls, [{cacertfile, filename:join([Dir, "ca.crt"])},
                                               {certfile,   filename:join([Dir, "client.crt"])},
                                               {keyfile,    filename:join([Dir, "client.key"])}]),
-    ok = eredis_cluster:connect([{"127.0.0.1", 31001},
-                                 {"127.0.0.1", 31002}]).
+    Res = eredis_cluster:connect([{"127.0.0.1", 31001},
+                                  {"127.0.0.1", 31002}]),
+    ?assertMatch(ok, Res).

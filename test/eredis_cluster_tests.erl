@@ -129,10 +129,10 @@ basic_test_() ->
             end
             },
 
-            { "binary support",
+            { "bitstring support",
             fun () ->
-                eredis_cluster:q([<<"set">>, <<"binary">>, <<"support">>]),
-                ?assertEqual({ok, <<"support">>}, eredis_cluster:q([<<"GET">>, <<"binary">>]))
+                eredis_cluster:q([<<"set">>, <<"bitstring">>,<<"support">>]),
+                ?assertEqual({ok, <<"support">>}, eredis_cluster:q([<<"GET">>, <<"bitstring">>]))
             end
             },
 
@@ -431,7 +431,7 @@ test_command_support(Command) ->
         {ok, [ExpectedKey | _]} ->
             ?assertEqual(binary_to_list(ExpectedKey), Key);
         {error, Error} ->
-            error(cmd_fail, {Command, Error})
+            ?assertEqual(dummy, {Command, Error})
     end.
 
 -spec get_master_nodes() -> [{NodeId::string(), PoolName::atom()}].

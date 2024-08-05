@@ -1,16 +1,6 @@
 Change log
 ==========
 
-0.9.0
------
-
-* Update eredis to 1.7.0
-
-0.8.0
------
-
-* Update eredis to 1.5.1
-
 0.7.0
 -----
 

@@ -27,7 +27,7 @@ xref:
 	@$(REBAR) xref
 
 dialyzer:
-	@$(REBAR) as test dialyzer
+	@$(REBAR) dialyzer
 
 elvis:
 	@elvis rock
