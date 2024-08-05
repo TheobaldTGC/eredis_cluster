@@ -79,8 +79,11 @@ stop() ->
 start(_Type, _Args) ->
     SupSupResult = eredis_cluster_sup_sup:start_link(),
     case application:get_env(eredis_cluster, init_nodes, []) of
-        []        -> ok;
-        InitNodes -> connect(InitNodes)
+        []        -> nop;
+        InitNodes -> 
+                     lists:foreach(fun({ClusterName, ClusterArgs}) ->
+                         connect(ClusterName, [ClusterArgs], [])
+                     end, InitNodes)
     end,
     SupSupResult.
 

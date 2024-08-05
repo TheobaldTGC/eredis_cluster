@@ -510,13 +510,22 @@ handle_call(_Request, _From, State) ->
 handle_cast({async_init, Cluster}, State) ->
     {ok, ClusterSup} = eredis_cluster_sup_sup:lookup_cluster(Cluster),
     PoolSup = eredis_cluster_sup:get_pool_sup(ClusterSup),
+    Config = application:get_env(eredis_cluster, init_nodes, []),
     InitNodes = case Cluster of
-                    ?default_cluster ->
-                        application:get_env(eredis_cluster, init_nodes, []);
-                    _Other  ->
-                        []
+                    ?default_cluster -> Config;
+                    _  ->
+                        ClusterConfig = lists:dropwhile(fun({ClusterName, _ClusterArgs}) ->
+                            ClusterName =/= Cluster
+                        end, Config),
+                        case nth(1, ClusterConfig) of
+                            #{} ->
+                                io:format("[error] Missing Redis Cluster ~s: ~p", [Cluster]),
+                                [];
+                             {ClusterName, ClusterArgs} ->
+                                io:format("[info] Connecting to Redis Cluster ~s: ~p~n", [ClusterName, ClusterArgs]),
+                                [ClusterArgs]
+                        end
                 end,
-
     %% application env options are read later in callstack
     {noreply, connect_(InitNodes, [], State#state{pool_sup = PoolSup})};
 handle_cast({reload_slots_map, Version}, #state{version = Version} = State) ->
@@ -535,3 +544,6 @@ terminate(_Reason, _State) ->
 %% @private
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+nth(N, L) when N > length(L) -> #{};
+nth(N, L) -> lists:nth(N,L).
