@@ -519,10 +519,10 @@ handle_cast({async_init, Cluster}, State) ->
                         end, Config),
                         case nth(1, ClusterConfig) of
                             #{} ->
-                                io:format("[error] Missing Redis Cluster ~s: ~p", [Cluster]),
+                                error_logger:error_msg("Missing Redis Cluster ~s", [Cluster]),
                                 [];
                              {ClusterName, ClusterArgs} ->
-                                io:format("[info] Connecting to Redis Cluster ~s: ~p~n", [ClusterName, ClusterArgs]),
+                                error_logger:info_msg("Connecting to Redis Cluster ~s: ~p", [ClusterName, ClusterArgs]),
                                 [ClusterArgs]
                         end
                 end,
