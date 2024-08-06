@@ -15,7 +15,7 @@
 -export([get_state/1, get_state_version/1]).
 -export([get_pool_by_slot/1, get_pool_by_slot/2]).
 -export([get_all_pools/0, get_all_pools/1]).
--export([get_cluster_slots/1, get_cluster_nodes/1]).
+-export([get_cluster_slots/1, get_cluster_nodes/1, get_cluster_nodes_simplified/1]).
 
 %% Public API (backward compat).
 -export([get_cluster_slots/0, get_cluster_nodes/0]).
@@ -223,6 +223,13 @@ get_cluster_nodes(State, Options) ->
     lists:foldl(fun(Node, Acc) ->
                         Acc ++ [binary:split(Node, <<" ">>, [global, trim])]
                 end, [], NodesInfoList).
+
+-spec get_cluster_nodes_simplified(Cluster :: atom()) -> [#node{}].
+get_cluster_nodes_simplified(Cluster) ->
+    State = get_state(Cluster),
+    SlotsMapList = tuple_to_list(State#state.slots_maps),
+    [SlotsMap#slots_map.node || SlotsMap <- SlotsMapList,
+        SlotsMap#slots_map.node =/= undefined].
 
 %% =============================================================================
 %% @private
