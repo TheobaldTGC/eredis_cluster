@@ -30,8 +30,8 @@
 -export([transaction/3]).
 
 %% Specific redis command implementation (default cluster)
--export([flushdb/0, load_script/1, scan/4]).
--export([eval/4]).
+-export([flushdb/0, load_script/1, load_script/2, scan/4]).
+-export([eval/4, eval/5]).
 
 %% Convenience functions (default cluster)
 -export([update_key/2]).
@@ -541,6 +541,22 @@ load_script(Script) ->
             Result
     end.
 
+-spec load_script(Cluster::atom(), Script::string()) -> redis_result().
+load_script(Cluster, Script) ->
+    Command = ["SCRIPT", "LOAD", Script],
+    case qa(Cluster, Command) of
+        Result when is_list(Result) ->
+            case proplists:lookup(error, Result) of
+                none ->
+                    [{ok, SHA1}|_] = Result,
+                    {ok,  SHA1};
+                Error ->
+                    Error
+            end;
+        Result ->
+            Result
+    end.
+
 %% =============================================================================
 %% @doc Performs a SCAN on a specific node in the Redis cluster.
 %%
@@ -988,6 +1004,31 @@ eval(Script, ScriptHash, Keys, Args) ->
         {error, <<"NOSCRIPT", _/binary>>} ->
             LoadCommand = ["SCRIPT", "LOAD", Script],
             case qk([LoadCommand, EvalShaCommand], Key) of
+                [_LoadResult, EvalResult] -> EvalResult;
+                Result -> Result
+            end;
+        Result ->
+            Result
+    end.
+
+-spec eval(Cluster, Script, ScriptHash, Keys, Args) -> redis_result()
+              when Cluster    :: atom(),
+                   Script     :: anystring(),
+                   ScriptHash :: anystring(),
+                   Keys       :: [anystring()],
+                   Args       :: [anystring()].
+eval(Cluster, Script, ScriptHash, Keys, Args) ->
+    KeyNb = length(Keys),
+    EvalShaCommand = ["EVALSHA", ScriptHash, integer_to_binary(KeyNb)] ++ Keys ++ Args,
+    Key = if
+        KeyNb == 0 -> "A"; %Random key
+        true -> hd(Keys)
+    end,
+
+    case qk(Cluster, EvalShaCommand, Key) of
+        {error, <<"NOSCRIPT", _/binary>>} ->
+            LoadCommand = ["SCRIPT", "LOAD", Script],
+            case qk(Cluster, [LoadCommand, EvalShaCommand], Key) of
                 [_LoadResult, EvalResult] -> EvalResult;
                 Result -> Result
             end;
