@@ -518,8 +518,8 @@ handle_cast({async_init, Cluster}, State) ->
     {ok, ClusterSup} = eredis_cluster_sup_sup:lookup_cluster(Cluster),
     PoolSup = eredis_cluster_sup:get_pool_sup(ClusterSup),
     Config = application:get_env(eredis_cluster, init_nodes, []),
-    InitNodes = case Cluster of
-                    ?default_cluster -> Config;
+    {InitNodes, Options} = case Cluster of
+                    ?default_cluster -> {Config, []};
                     _  ->
                         ClusterConfig = lists:dropwhile(fun({ClusterName, _ClusterArgs}) ->
                             ClusterName =/= Cluster
@@ -527,14 +527,19 @@ handle_cast({async_init, Cluster}, State) ->
                         case nth(1, ClusterConfig) of
                             #{} ->
                                 error_logger:error_msg("Missing Redis Cluster ~s", [Cluster]),
-                                [];
+                                {[], []};
                              {ClusterName, ClusterArgs} ->
                                 error_logger:info_msg("Connecting to Redis Cluster ~s: ~p", [ClusterName, ClusterArgs]),
-                                [ClusterArgs]
+                                {[ClusterArgs], []};
+                             {ClusterName, ClusterArgs, ClusterOptions} ->
+                                error_logger:info_msg("Connecting to Redis Cluster ~s: ~p ~p", [ClusterName, ClusterArgs, ClusterOptions]),
+                                {[ClusterArgs], ClusterOptions}
                         end
                 end,
+
+                
     %% application env options are read later in callstack
-    {noreply, connect_(InitNodes, [], State#state{pool_sup = PoolSup})};
+    {noreply, connect_(InitNodes, Options, State#state{pool_sup = PoolSup})};
 handle_cast({reload_slots_map, Version}, #state{version = Version} = State) ->
     {noreply, reload_slots_map(State)};
 handle_cast({reload_slots_map, _OldVersion}, State) ->

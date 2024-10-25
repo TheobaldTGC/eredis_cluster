@@ -81,8 +81,13 @@ start(_Type, _Args) ->
     case application:get_env(eredis_cluster, init_nodes, []) of
         []        -> nop;
         InitNodes -> 
-                     lists:foreach(fun({ClusterName, ClusterArgs}) ->
-                         connect(ClusterName, [ClusterArgs], [])
+                     lists:foreach(fun(InitNode) ->
+                        case InitNode of
+                            {ClusterName, ClusterArgs} -> 
+                                connect(ClusterName, [ClusterArgs], []);
+                            {ClusterName, ClusterArgs, Options} -> 
+                                connect(ClusterName, [ClusterArgs], Options)
+                        end
                      end, InitNodes)
     end,
     SupSupResult.
