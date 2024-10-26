@@ -521,10 +521,15 @@ handle_cast({async_init, Cluster}, State) ->
     {InitNodes, Options} = case Cluster of
                     ?default_cluster -> {Config, []};
                     _  ->
-                        ClusterConfig = lists:dropwhile(fun({ClusterName, _ClusterArgs}) ->
-                            ClusterName =/= Cluster
+                        TargetClusterConfig = lists:dropwhile(fun(ClusterConfig) ->
+                            case ClusterConfig of 
+                                {ClusterName, _ClusterArgs} -> 
+                                    ClusterName =/= Cluster;
+                                {ClusterName, _ClusterArgs, _Options} -> 
+                                    ClusterName =/= Cluster
+                            end
                         end, Config),
-                        case nth(1, ClusterConfig) of
+                        case nth(1, TargetClusterConfig) of
                             #{} ->
                                 error_logger:error_msg("Missing Redis Cluster ~s", [Cluster]),
                                 {[], []};
@@ -537,7 +542,6 @@ handle_cast({async_init, Cluster}, State) ->
                         end
                 end,
 
-                
     %% application env options are read later in callstack
     {noreply, connect_(InitNodes, Options, State#state{pool_sup = PoolSup})};
 handle_cast({reload_slots_map, Version}, #state{version = Version} = State) ->
